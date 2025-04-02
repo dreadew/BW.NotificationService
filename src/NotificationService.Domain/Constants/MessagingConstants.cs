@@ -2,9 +2,9 @@
 
 public static class MessagingConstants
 {
-    private const string RabbitmqSection = "Rabbitmq";
-    public const string HostName = $"{RabbitmqSection}-HostName";
-    public const string UserName = $"{RabbitmqSection}-UserName";
-    public const string Password = $"{RabbitmqSection}-Password";
-    public const string QueueName = $"{RabbitmqSection}-QueueName";
+    public const string Section = "Rabbitmq";
+    public const string HostName = $"{Section}:HostName";
+    public const string UserName = $"{Section}:UserName";
+    public const string Password = $"{Section}:Password";
+    public const string QueueName = $"{Section}:QueueName";
 }

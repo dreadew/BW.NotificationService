@@ -1,11 +1,17 @@
 using NotificationService.Api;
 using NotificationService.Application.Extension;
+using NotificationService.Domain.Constants;
+using NotificationService.Infrastructure.Configuration;
 using NotificationService.Infrastructure.Extension;
 
 var builder = Host.CreateApplicationBuilder(args);
+builder.Configuration.AddVaultConfiguration(options =>
+{
+    builder.Configuration.GetSection(VaultConstants.VaultSection).Bind(options);
+});
 builder.Services.AddHostedService<Worker>();
 builder.Services.AddApplication();
-builder.Services.AddInfrastructure();
+builder.Services.AddInfrastructure(builder.Configuration);
 
 var host = builder.Build();
 host.Run();

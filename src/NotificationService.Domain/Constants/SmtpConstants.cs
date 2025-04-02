@@ -2,10 +2,10 @@
 
 public static class SmtpConstants
 {
-    private const string SmtpSection = "Smtp";
-    public const string From = $"{SmtpSection}-Login";
-    public const string Host = $"{SmtpSection}-Host";
-    public const string Port = $"{SmtpSection}-Port";
-    public const string UserName = $"{SmtpSection}-Email";
-    public const string Password = $"{SmtpSection}-Password";
+    public const string Section = "Smtp";
+    public const string From = $"{Section}:Login";
+    public const string Host = $"{Section}:Host";
+    public const string Port = $"{Section}:Port";
+    public const string UserName = $"{Section}:Email";
+    public const string Password = $"{Section}:Password";
 }
