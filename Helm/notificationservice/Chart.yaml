@@ -1,0 +1,4 @@
+apiVersion: v2
+name: notificationservice
+description: NotificationService Helm Chart
+version: 0.1.0
