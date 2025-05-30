@@ -1,4 +1,4 @@
-﻿using NotificationService.Domain.DTOs;
+﻿using Common.Base.DTO.Email;
 
 namespace NotificationService.Domain.Interfaces;
 

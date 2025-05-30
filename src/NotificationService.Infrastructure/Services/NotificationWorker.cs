@@ -1,25 +1,24 @@
 ﻿using System.Text;
 using System.Text.Json;
+using Common.Base.DTO.Email;
+using Common.Base.Options;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using NotificationService.Domain.Constants;
-using NotificationService.Domain.DTOs;
-using NotificationService.Domain.Exceptions;
 using NotificationService.Domain.Interfaces;
-using NotificationService.Domain.Options;
 using RabbitMQ.Client;
 using RabbitMQ.Client.Events;
 
 namespace NotificationService.Infrastructure.Services;
 
-public class NotificationWorker : BackgroundService
+public class NotificationWorker : BackgroundService, IAsyncDisposable
 {
     private readonly IOptions<MessagingOptions> _options;
     private readonly ILogger<NotificationWorker> _logger;
     private readonly INotificationHandler _notificationHandler;
-    private IConnection _connection;
-    private IChannel _channel;
+    private readonly IConnectionFactory _connectionFactory;
+    private IConnection? _connection;
+    private IChannel? _channel;
 
     public NotificationWorker(ILogger<NotificationWorker> logger,
         INotificationHandler notificationHandler,
@@ -29,30 +28,13 @@ public class NotificationWorker : BackgroundService
         _notificationHandler = notificationHandler;
         _logger = logger;
        
-        var factory = new ConnectionFactory()
+        _connectionFactory = new ConnectionFactory()
         {
             HostName = _options.Value.HostName,
             UserName = _options.Value.UserName,
             Password = _options.Value.Password,
         };
         
-        _connection = factory.CreateConnectionAsync()
-            .GetAwaiter()
-            .GetResult();
-        _channel = _connection.CreateChannelAsync()
-            .GetAwaiter()
-            .GetResult();
-
-        _channel.QueueDeclareAsync(
-                queue: _options.Value.QueueName,
-                durable: true,
-                exclusive: false,
-                autoDelete: false,
-                arguments: null)
-            .GetAwaiter()
-            .GetResult();
-
-        _connection.ConnectionShutdownAsync += OnConnectionShutdownAsync;
         LogMessage(_options.Value.HostName, _options.Value.QueueName);
     }
 
@@ -68,11 +50,32 @@ public class NotificationWorker : BackgroundService
             reason.ReplyText);
         return Task.CompletedTask;
     }
-
-    protected override Task ExecuteAsync(CancellationToken stoppingToken)
+    
+    private async Task InitializeConnectionAsync()
     {
+        _connection = await _connectionFactory.CreateConnectionAsync();
+        _channel = await _connection.CreateChannelAsync();
+        
+        await _channel.QueueDeclareAsync(
+            queue: _options.Value.QueueName, 
+            durable: true, 
+            exclusive: false, 
+            autoDelete: false, 
+            arguments: null);
+
+        _connection.ConnectionShutdownAsync += OnConnectionShutdownAsync;
+    }
+
+    protected override async Task ExecuteAsync(CancellationToken stoppingToken)
+    {
+        await InitializeConnectionAsync();
+        if (_channel == null || _connection == null)
+        {
+            _logger.LogError("RabbitMQ (Consumer): Не удалось инициализировать соединение или канал.");
+            return;
+        }
         var consumer = new AsyncEventingBasicConsumer(_channel);
-        consumer.ReceivedAsync += async (model, ea) =>
+        consumer.ReceivedAsync += async (_, ea) =>
         {
             try
             {
@@ -87,18 +90,24 @@ public class NotificationWorker : BackgroundService
 
                 await _channel.BasicAckAsync(ea.DeliveryTag, false, stoppingToken);
             }
-            catch (Exception ex)
+            catch
             {
                 await _channel.BasicNackAsync(ea.DeliveryTag, false, true, stoppingToken);
             }
         };
-        _channel.BasicConsumeAsync(_options.Value.QueueName, false, consumer, stoppingToken);
-        return Task.Delay(Timeout.Infinite, stoppingToken);
+        await _channel.BasicConsumeAsync(_options.Value.QueueName, false, consumer, stoppingToken);
     }
 
-    public async void Dispose()
+    public async ValueTask DisposeAsync()
     {
-        await _channel?.CloseAsync();
-        await _connection?.CloseAsync();
+        if (_channel != null)
+        {
+            await _channel.CloseAsync();
+        }
+
+        if (_connection != null)
+        {
+            await _connection.CloseAsync();
+        }
     }
 }

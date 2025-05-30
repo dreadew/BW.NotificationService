@@ -1,20 +1,21 @@
 ﻿using System.Text;
-using NotificationService.Domain.Constants;
-using NotificationService.Domain.DTOs;
-using NotificationService.Domain.Enums;
+using Common.Base.Constants;
+using Common.Base.DTO.Email;
+using Common.Base.Enums;
+using Common.Base.Services;
 using NotificationService.Domain.Interfaces;
 
 namespace NotificationService.Application.Services;
 
 public class NotificationHandlerService : INotificationHandler
 {
-    private readonly ITotpGenerator _totpGenerator;
+    private readonly ITotpService _totpService;
     private readonly IEmailSender _emailSender;
 
-    public NotificationHandlerService(ITotpGenerator totpGenerator,
+    public NotificationHandlerService(ITotpService totpService,
         IEmailSender emailSender)
     {
-        _totpGenerator = totpGenerator;
+        _totpService = totpService;
         _emailSender = emailSender;
     }
 
@@ -41,7 +42,7 @@ public class NotificationHandlerService : INotificationHandler
             _ => "Подтверждение аккаунта"
         };
 
-        var totp = _totpGenerator.GenerateTotp(secret);
+        var totp = _totpService.GenerateTotp(secret);
         var emailMessage = new EmailMessageDto(dto.Email,
             subject, FormatTotp(totp));
         await _emailSender.SendEmailAsync(emailMessage,

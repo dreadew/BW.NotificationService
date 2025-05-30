@@ -6,4 +6,8 @@
     <Nullable>enable</Nullable>
   </PropertyGroup>
 
+  <ItemGroup>
+    <PackageReference Include="Hexaend.Common.Base" Version="1.0.0" />
+  </ItemGroup>
+
 </Project>

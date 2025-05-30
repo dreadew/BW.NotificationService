@@ -1,11 +1,9 @@
-﻿using MailKit.Net.Smtp;
+﻿using Common.Base.DTO.Email;
+using Common.Base.Options;
+using MailKit.Net.Smtp;
 using Microsoft.Extensions.Options;
 using MimeKit;
-using NotificationService.Domain.Constants;
-using NotificationService.Domain.DTOs;
-using NotificationService.Domain.Exceptions;
 using NotificationService.Domain.Interfaces;
-using NotificationService.Domain.Options;
 
 namespace NotificationService.Infrastructure.Services;
 

@@ -1,7 +1,7 @@
+using Common.Base.Constants;
+using Common.Services.Configuration;
 using NotificationService.Api;
 using NotificationService.Application.Extension;
-using NotificationService.Domain.Constants;
-using NotificationService.Infrastructure.Configuration;
 using NotificationService.Infrastructure.Extension;
 
 var builder = Host.CreateApplicationBuilder(args);
