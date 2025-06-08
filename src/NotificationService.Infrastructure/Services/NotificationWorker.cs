@@ -2,6 +2,7 @@
 using System.Text.Json;
 using Common.Base.DTO.Email;
 using Common.Base.Options;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
@@ -13,19 +14,19 @@ namespace NotificationService.Infrastructure.Services;
 
 public class NotificationWorker : BackgroundService, IAsyncDisposable
 {
+    private readonly IServiceProvider _serviceProvider;
     private readonly IOptions<MessagingOptions> _options;
     private readonly ILogger<NotificationWorker> _logger;
-    private readonly INotificationHandler _notificationHandler;
     private readonly IConnectionFactory _connectionFactory;
     private IConnection? _connection;
     private IChannel? _channel;
 
     public NotificationWorker(ILogger<NotificationWorker> logger,
-        INotificationHandler notificationHandler,
+        IServiceProvider serviceProvider,
         IOptions<MessagingOptions> options)
     {
         _options = options;
-        _notificationHandler = notificationHandler;
+        _serviceProvider = serviceProvider;
         _logger = logger;
        
         _connectionFactory = new ConnectionFactory()
@@ -85,7 +86,11 @@ public class NotificationWorker : BackgroundService, IAsyncDisposable
                 var notification = JsonSerializer.Deserialize<SendEmailRequest>(messageJson);
                 if (notification != null)
                 {
-                    await _notificationHandler.HandleNotificationAsync(notification, stoppingToken);
+                    using (var scope = _serviceProvider.CreateScope())
+                    {
+                        var handler = scope.ServiceProvider.GetRequiredService<INotificationHandler>();
+                        await handler.HandleNotificationAsync(notification, stoppingToken);
+                    }
                 }
 
                 await _channel.BasicAckAsync(ea.DeliveryTag, false, stoppingToken);
